@@ -372,6 +372,17 @@ status_t OpenUSB(unsigned int reader_index, int fd)
 		goto clean;
 	}
 
+	r = libusb_set_auto_detach_kernel_driver(dev_handle, 1);
+	if (r < 0)
+	{
+		libusb_free_config_descriptor(config_desc);
+		(void)libusb_close(dev_handle);
+		DEBUG_CRITICAL4("Can't claim interface %d/%d: %s",
+			bus_number, device_address, libusb_error_name(r));
+		interface_number = -1;
+		goto clean;
+	}
+
 	r = libusb_claim_interface(dev_handle, interface);
 	if (r < 0)
 	{
