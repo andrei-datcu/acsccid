@@ -57,8 +57,6 @@
 #include <pthread.h>
 #endif
 
-#include <iconv.h>
-
 #if defined(__APPLE__) | defined(sun)
 #pragma pack(1)
 #else
@@ -2087,7 +2085,6 @@ EXTERNAL RESPONSECODE IFDHControl(DWORD Lun, DWORD dwControlCode,
 			unsigned int commandLength = 0;
 			unsigned char response[3 + 2];
 			unsigned int responseLength = sizeof(response);
-			iconv_t cd = (iconv_t) -1;
 			char *inBuffer = NULL;
 			size_t inBytesLeft = 0;
 			char *outBuffer = NULL;
@@ -2106,28 +2103,12 @@ EXTERNAL RESPONSECODE IFDHControl(DWORD Lun, DWORD dwControlCode,
 				goto err;
 			}
 
-			/* Convert UTF-8 string to ISO-8859-2 string. */
-			cd = iconv_open("ISO-8859-2", "UTF-8");
-			if (cd == (iconv_t) -1)
-			{
-				DEBUG_INFO1("iconv_open() failed");
-				return_value = IFD_COMMUNICATION_ERROR;
-				goto err;
-			}
-
 			inBuffer = (char *) pWriteDisplay->bString;
 			inBytesLeft = pWriteDisplay->bStringLength;
 			outBuffer = (char *) command + 7;
-			outBytesLeft = 32;
-			nconv = iconv(cd, &inBuffer, &inBytesLeft, &outBuffer,
-				&outBytesLeft);
-			iconv_close(cd);
-			if (nconv == (size_t) -1)
-			{
-				DEBUG_INFO1("iconv() failed");
-				return_value = IFD_COMMUNICATION_ERROR;
-				goto err;
-			}
+			outBytesLeft = inBytesLeft;
+
+			memcpy(outBuffer, inBuffer, inBytesLeft);
 
 			/* Calculate the length. */
 			length = 34 - outBytesLeft;
@@ -3381,7 +3362,6 @@ static RESPONSECODE process_spe_ppdu(unsigned int reader_index,
 			unsigned int commandLength = 0;
 			unsigned char response[3 + 2];
 			unsigned int responseLength = sizeof(response);
-			iconv_t cd = (iconv_t) -1;
 			char *inBuffer = NULL;
 			size_t inBytesLeft = 0;
 			char *outBuffer = NULL;
@@ -3436,27 +3416,11 @@ static RESPONSECODE process_spe_ppdu(unsigned int reader_index,
 			}
 
 			/* Convert UTF-8 string to ISO-8859-2 string. */
-			cd = iconv_open("ISO-8859-2", "UTF-8");
-			if (cd == (iconv_t) -1)
-			{
-				DEBUG_INFO1("iconv_open() failed");
-				ret = IFD_COMMUNICATION_ERROR;
-				break;
-			}
-
 			inBuffer = (char *) data + 7;
 			inBytesLeft = bStringLength;
 			outBuffer = (char *) command + 7;
-			outBytesLeft = 32;
-			nconv = iconv(cd, &inBuffer, &inBytesLeft, &outBuffer,
-				&outBytesLeft);
-			iconv_close(cd);
-			if (nconv == (size_t) -1)
-			{
-				DEBUG_INFO1("iconv() failed");
-				ret = IFD_COMMUNICATION_ERROR;
-				break;
-			}
+			outBytesLeft = inBytesLeft;
+			memcpy(outBuffer, inBuffer, inBytesLeft);
 
 			/* Calculate the length. */
 			length = 34 - outBytesLeft;
